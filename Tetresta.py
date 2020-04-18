@@ -53,11 +53,11 @@ border_l = top_left_x
 border_b = top_left_y + grid_height
 
 
-
 def randomizer():
     random_shape = figures[randint(0, len(figures) - 1)]
     # random_shape = figures[0]
     return random_shape
+
 
 class Grid:
 
@@ -82,8 +82,6 @@ class Grid:
             self.grid_positions_y.append(self.start_y + r * block_size)
 
 
-
-
 class Fig:
     def __init__(self, shape, start_x, start_y):
         self.shape = shape
@@ -91,7 +89,6 @@ class Fig:
         self.y = start_y
         self.timecount = 0
         self.color = (0, 0, 0)
-        # self.valid_coord = []
         self.coord = []
 
         self.abs_coord = []
@@ -104,7 +101,6 @@ class Fig:
         self.isFallen = False
         self.draw_shape(self.shape, self.x, self.y)
         self.stored_coord = []
-
 
     def draw_shape(self, shape, sx, sy):
         row = 0
@@ -126,7 +122,7 @@ class Fig:
             if i == 0:
                 column += 1
 
-        # \|/ Here function gets relative coordinates once instance of Fig is created
+        # \|/ Gets relative coordinates once instance of Fig is created
         for x, y in self.abs_coord:
             rx = x - self.rot_point[0]
             ry = y - self.rot_point[1]
@@ -134,7 +130,6 @@ class Fig:
             self.rel_coord.append((rx, ry))
 
         return self.rel_coord
-
 
     def converter(self, rel):
         converted_coord = []
@@ -147,9 +142,8 @@ class Fig:
         self.coord = converted_coord
         return self.coord
 
-
     def draw_figure(self):
-        # Funcs that modifies:
+        # Modifies:
         if self.rotCw:
             self.rotate_cw()
             self.rotCw = False
@@ -167,13 +161,11 @@ class Fig:
         for x, y in self.coord:
             pygame.draw.rect(win, self.color, (x, y, block_size, block_size))
 
-
     def valid_space(self, coord):
         global taken_pos
         fixed_coord = []
         at_right_b = False
         at_left_b = False
-        isTaken = False
         for x, y in coord:
             if x > border_r:
                 at_right_b = True
@@ -189,9 +181,6 @@ class Fig:
                 if (x - block_size, y) in taken_pos:
                     self.collision_left = True
 
-# bandyti per self.stored_coord
-
-
         if at_right_b:
             for x, y in coord:
                 fixed_coord.append((x - block_size, y))
@@ -205,17 +194,14 @@ class Fig:
 
         return self.coord
 
-
     def rotate_cw(self):
         new_rel_coord = []
         for x, y in self.rel_coord:
             rel_x = -y
             rel_y = x
             new_rel_coord.append((rel_x, rel_y))
-
         self.rel_coord = new_rel_coord
         return self.rel_coord
-
 
     def fall(self):
         if self.timecount >= fps:
@@ -231,6 +217,7 @@ def grid_painter(xy_color):
     for xy, color in xy_color:
         pygame.draw.rect(win, color, (xy[0], xy[1], block_size, block_size))
 
+
 def clear_row(y):
     global taken_grid
     clear_y = []
@@ -240,11 +227,6 @@ def clear_row(y):
             clear_y.append(i)
 
     if len(clear_y) > 0:
-        # for j in y:
-        #     y.remove(clearY)
-        # for k in y:
-        #     if k[1] == clearY:
-        #         y.remove(k)
         for xycolor in taken_grid:
             if xycolor[0][1] in clear_y:
                 pass
@@ -254,9 +236,7 @@ def clear_row(y):
                 else:
                     xycolor = ((xycolor[0][0], xycolor[0][1] + block_size * int((len(clear_y)/col_num))), xycolor[1])
                     taken_sub.append(xycolor)
-
         taken_grid = taken_sub
-
 
 
 current_figure = Fig(randomizer(), start_x, start_y)
@@ -264,6 +244,7 @@ tetris_grid = Grid(top_left_x, top_left_y)
 taken_grid = []
 taken_pos = []
 taken_y = []
+
 
 def taken():
     global taken_pos
@@ -273,6 +254,7 @@ def taken():
     for xy, color in taken_grid:
         taken_pos.append(xy)
         taken_y.append(xy[1])
+
 
 def redraw_game_window():
     win.blit(bg, (0, 0))
@@ -293,17 +275,11 @@ while run:
     if ticker > 0:
         ticker -= 1
 
-
-
     if current_figure.isFallen:
-
-
         for xy in current_figure.coord:
             taken_grid.append(((xy[0], xy[1]), current_figure.color))
-
         taken()
         clear_row(taken_y)
-
         new_figure = Fig(randomizer(), start_x, start_y)
         current_figure = new_figure
 
