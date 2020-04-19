@@ -1,9 +1,10 @@
 import pygame
+import pygame.freetype
 from random import randint
 
 pygame.init()
 
-window_width = 400
+window_width = 500
 window_height = 700
 grid_width = 300
 grid_height = 600
@@ -14,7 +15,7 @@ top_left_y = 50
 grid_color = (50, 50, 50)
 
 fps = 30
-cooldown = round(fps / 8)
+cooldown = round(fps / 10)
 
 window = (window_width, window_height)
 win = pygame.display.set_mode(window)
@@ -53,14 +54,7 @@ border_l = top_left_x
 border_b = top_left_y + grid_height
 
 
-def randomizer():
-    random_shape = figures[randint(0, len(figures) - 1)]
-    # random_shape = figures[0]
-    return random_shape
-
-
 class Grid:
-
     def __init__(self, x, y):
         self.start_x = x
         self.start_y = y
@@ -70,7 +64,6 @@ class Grid:
     def draw(self, surface):
         self.grid_positions_x = []
         self.grid_positions_y = []
-
 
         for c in range(col_num + 1):
             pygame.draw.line(surface, grid_color, (self.start_x + c * block_size, self.start_y),
@@ -220,12 +213,17 @@ def grid_painter(xy_color):
 
 def clear_row(y):
     global taken_grid
+    global score
     clear_y = []
     taken_sub = []
     for i in y:
         if y.count(i) >= col_num:
             clear_y.append(i)
-
+    lines_score = len(clear_y)
+    if lines_score == 10:
+        score += lines_score
+    elif lines_score >= 20:
+        score += int(lines_score * (lines_score / 10))
     if len(clear_y) > 0:
         for xycolor in taken_grid:
             if xycolor[0][1] in clear_y:
@@ -238,8 +236,15 @@ def clear_row(y):
                     taken_sub.append(xycolor)
         taken_grid = taken_sub
 
+score = 0
+def scoreboard():
+    score_text = pygame.freetype.SysFont('arial', 24)
+    score_pos = (top_left_x + grid_width + 30, int(top_left_y + grid_height / 2))
+    score_text.render_to(win, score_pos, f'Score: {score}', (255, 255, 255))
 
-current_figure = Fig(randomizer(), start_x, start_y)
+
+random_shape = figures[randint(0, len(figures) - 1)]
+current_figure = Fig(random_shape, start_x, start_y)
 tetris_grid = Grid(top_left_x, top_left_y)
 taken_grid = []
 taken_pos = []
@@ -262,7 +267,7 @@ def redraw_game_window():
     current_figure.draw_figure()
     taken()
     grid_painter(taken_grid)
-
+    scoreboard()
     tetris_grid.draw(win)
     pygame.display.update()
 
@@ -280,7 +285,8 @@ while run:
             taken_grid.append(((xy[0], xy[1]), current_figure.color))
         taken()
         clear_row(taken_y)
-        new_figure = Fig(randomizer(), start_x, start_y)
+        random_shape = figures[randint(0, len(figures) - 1)]
+        new_figure = Fig(random_shape, start_x, start_y)
         current_figure = new_figure
 
     for event in pygame.event.get():
