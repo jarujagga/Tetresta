@@ -236,12 +236,14 @@ def clear_row(y):
                     taken_sub.append(xycolor)
         taken_grid = taken_sub
 
+
 score = 0
+
+
 def scoreboard():
     score_text = pygame.freetype.SysFont('Verdana', 20)
     score_pos = (top_left_x + grid_width + 30, int(top_left_y + grid_height / 2))
     score_text.render_to(win, score_pos, f'Score: {score}', (255, 255, 255))
-
 
 
 tetris_grid = Grid(top_left_x, top_left_y)
@@ -274,13 +276,18 @@ def text_object(text, font, color):
     textSurface = font.render(text, True, color)
     return textSurface, textSurface.get_rect()
 
+
+def quit_click():
+    pygame.quit()
+    quit()
+
+
 def button(text, y, action=None):
     # ic = inactive color; ac = active color
     ic = (80, 166, 80)
     ac = (42, 212, 42)
     largeText = pygame.font.SysFont('Verdana', 40)
     click = pygame.mouse.get_pressed()
-
 
     TextSurf, TextRect = text_object(text, largeText, ic)
     TextRect.center = (int(window_width / 2), y)
@@ -297,10 +304,11 @@ def button(text, y, action=None):
             action()
 
     win.blit(TextSurf, TextRect)
+
+
 def loop_menu():
     # ic = inactive_color
     menu = True
-
     while menu:
 
         for event in pygame.event.get():
@@ -312,13 +320,15 @@ def loop_menu():
 
         button("Start game", 100, loop_game)
         button("Leaderboards", 200)
-        button("Quit", 300, quit)
+        button("Quit", 300, quit_click)
 
         pygame.display.update()
         clock.tick(10)
 
+
 random_shape = figures[randint(0, len(figures) - 1)]
 current_figure = Fig(random_shape, start_x, start_y)
+
 
 def loop_game():
     global random_shape
@@ -346,8 +356,6 @@ def loop_game():
                 pygame.quit()
                 quit()
 
-
-
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_ESCAPE]:
@@ -374,7 +382,6 @@ def loop_game():
                 ticker = cooldown
 
         redraw_game_window()
-
 
 
 loop_menu()
