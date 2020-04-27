@@ -238,13 +238,12 @@ def clear_row(y):
 
 score = 0
 def scoreboard():
-    score_text = pygame.freetype.SysFont('arial', 24)
+    score_text = pygame.freetype.SysFont('Verdana', 20)
     score_pos = (top_left_x + grid_width + 30, int(top_left_y + grid_height / 2))
     score_text.render_to(win, score_pos, f'Score: {score}', (255, 255, 255))
 
 
-random_shape = figures[randint(0, len(figures) - 1)]
-current_figure = Fig(random_shape, start_x, start_y)
+
 tetris_grid = Grid(top_left_x, top_left_y)
 taken_grid = []
 taken_pos = []
@@ -263,7 +262,6 @@ def taken():
 
 def redraw_game_window():
     win.blit(bg, (0, 0))
-
     current_figure.draw_figure()
     taken()
     grid_painter(taken_grid)
@@ -272,49 +270,113 @@ def redraw_game_window():
     pygame.display.update()
 
 
-ticker = 0
-run = True
-while run:
+def text_object(text, font, color):
+    textSurface = font.render(text, True, color)
+    return textSurface, textSurface.get_rect()
 
-    clock.tick(fps)
-    if ticker > 0:
-        ticker -= 1
+def button(text, y, action=None):
+    # ic = inactive color; ac = active color
+    ic = (80, 166, 80)
+    ac = (42, 212, 42)
+    largeText = pygame.font.SysFont('Verdana', 40)
+    click = pygame.mouse.get_pressed()
 
-    if current_figure.isFallen:
-        for xy in current_figure.coord:
-            taken_grid.append(((xy[0], xy[1]), current_figure.color))
-        taken()
-        clear_row(taken_y)
-        random_shape = figures[randint(0, len(figures) - 1)]
-        new_figure = Fig(random_shape, start_x, start_y)
-        current_figure = new_figure
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+    TextSurf, TextRect = text_object(text, largeText, ic)
+    TextRect.center = (int(window_width / 2), y)
 
-    keys = pygame.key.get_pressed()
+    bx = TextRect[0]
+    by = TextRect[1]
+    width = TextRect[2]
+    height = TextRect[3]
+    mouse = pygame.mouse.get_pos()
+    if bx < mouse[0] < bx + width and by < mouse[1] < by + height:
+        TextSurf, TextRect = text_object(text, largeText, ac)
+        TextRect.center = (int(window_width / 2), y)
+        if click[0] == 1 and action != None:
+            action()
 
-    if keys[pygame.K_UP]:
-        if ticker == 0:
-            current_figure.rotCw = True
-            ticker = cooldown
+    win.blit(TextSurf, TextRect)
+def loop_menu():
+    # ic = inactive_color
+    menu = True
 
-    if keys[pygame.K_DOWN]:
-        if ticker == 0:
-            current_figure.rot_point[1] += block_size
-            ticker = cooldown
+    while menu:
 
-    if keys[pygame.K_RIGHT]:
-        if ticker == 0 and not current_figure.collision_right:
-            current_figure.rot_point[0] += block_size
-            ticker = cooldown
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        
+        win.fill((0, 0, 0))
 
-    if keys[pygame.K_LEFT]:
-        if ticker == 0 and not current_figure.collision_left:
-            current_figure.rot_point[0] -= block_size
-            ticker = cooldown
+        button("Start game", 100, loop_game)
+        button("Leaderboards", 200)
+        button("Quit", 300, quit)
 
-    redraw_game_window()
+        pygame.display.update()
+        clock.tick(10)
 
+random_shape = figures[randint(0, len(figures) - 1)]
+current_figure = Fig(random_shape, start_x, start_y)
+
+def loop_game():
+    global random_shape
+    global current_figure
+
+    ticker = 0
+    run = True
+    while run:
+
+        clock.tick(fps)
+        if ticker > 0:
+            ticker -= 1
+
+        if current_figure.isFallen:
+            for xy in current_figure.coord:
+                taken_grid.append(((xy[0], xy[1]), current_figure.color))
+            taken()
+            clear_row(taken_y)
+            random_shape = figures[randint(0, len(figures) - 1)]
+            new_figure = Fig(random_shape, start_x, start_y)
+            current_figure = new_figure
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+
+
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_ESCAPE]:
+            loop_menu()
+
+        if keys[pygame.K_UP]:
+            if ticker == 0:
+                current_figure.rotCw = True
+                ticker = cooldown
+
+        if keys[pygame.K_DOWN]:
+            if ticker == 0:
+                current_figure.rot_point[1] += block_size
+                ticker = cooldown
+
+        if keys[pygame.K_RIGHT]:
+            if ticker == 0 and not current_figure.collision_right:
+                current_figure.rot_point[0] += block_size
+                ticker = cooldown
+
+        if keys[pygame.K_LEFT]:
+            if ticker == 0 and not current_figure.collision_left:
+                current_figure.rot_point[0] -= block_size
+                ticker = cooldown
+
+        redraw_game_window()
+
+
+
+loop_menu()
+loop_game()
 pygame.quit()
