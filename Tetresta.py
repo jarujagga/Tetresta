@@ -19,10 +19,8 @@ cooldown = round(fps / 10)
 
 window = (window_width, window_height)
 win = pygame.display.set_mode(window)
-
 pygame.display.set_caption("Tetriada")
 bg = pygame.Surface(window)
-
 clock = pygame.time.Clock()
 
 figures = [(1, 1, 2,
@@ -49,44 +47,29 @@ figures_color = [(232, 229, 77),
                 (199, 36, 28)]
 
 block_size = int(grid_width / col_num)
-start_x = int(top_left_x + grid_width/2 - block_size*2)
-# start_y = int(top_left_y)
-
-start_y = int(top_left_y - block_size*3)
-border_r = top_left_x + grid_width - block_size
+border_r = top_left_x + (col_num-1) * block_size
 border_l = top_left_x
-border_b = top_left_y + grid_height
+border_b = top_left_y + row_num * block_size
 
 
-class Grid:
-    def __init__(self, x, y):
-        self.start_x = x
-        self.start_y = y
-        self.grid_positions_x = []
-        self.grid_positions_y = []
-
-    def draw(self, surface):
-        self.grid_positions_x = []
-        self.grid_positions_y = []
-
-        for c in range(col_num + 1):
-            pygame.draw.line(surface, grid_color, (self.start_x + c * block_size, self.start_y),
-                             (self.start_x + c * block_size, self.start_y + row_num * block_size))
-            self.grid_positions_x.append(self.start_x + c*block_size)
-        for r in range(row_num + 1):
-            pygame.draw.line(surface, grid_color, (self.start_x, self.start_y + r * block_size),
-                             (self.start_x + grid_width, self.start_y + r * block_size))
-            self.grid_positions_y.append(self.start_y + r * block_size)
-
-
-
+def grid(surface):
+    x = top_left_x
+    y = top_left_y
+    grid_positions_x = []
+    grid_positions_y = []
+    for c in range(col_num + 1):
+        pygame.draw.line(surface, grid_color, (x + c * block_size, y), (x + c * block_size, y + row_num * block_size))
+        grid_positions_x.append(x + c * block_size)
+    for r in range(row_num + 1):
+        pygame.draw.line(surface, grid_color, (x, y + r * block_size), (x + grid_width, y + r * block_size))
+        grid_positions_y.append(y + r * block_size)
 
 
 class Fig:
-    def __init__(self, shape, start_x, start_y):
-        self.shape = shape
-        self.x = start_x
-        self.y = start_y
+    def __init__(self):
+        self.shape = random_shape
+        self.x = int(top_left_x + int(col_num/3) * block_size)
+        self.y = int(top_left_y - block_size*3)
         self.timecount = 0
         self.color = (0, 0, 0)
         self.coord = []
@@ -97,10 +80,8 @@ class Fig:
 
         self.collision_left = False
         self.collision_right = False
-        self.rotCw = False
         self.isFallen = False
         self.draw_shape(self.shape, self.x, self.y)
-        self.stored_coord = []
 
     def fig_appear(self):
         if self.shape == figures[2]:
@@ -149,19 +130,12 @@ class Fig:
 
     def draw_figure(self):
         # Modifies:
-        if self.rotCw:
-            self.rotate_cw()
-            self.rotCw = False
-        else:
-            pass
         self.fall()
         self.collision_right = False
         self.collision_left = False
         # Checks if space is valid, takes self.coord from converter as arg
         self.valid_space(self.converter(self.rel_coord))
 
-        # Stores final coordinates in memory
-        self.stored_coord = self.coord
         self.color = figures_color[figures.index(self.shape)]
         for x, y in self.coord:
             if y < top_left_y:
@@ -193,7 +167,7 @@ class Fig:
             if (x - block_size, y) in taken_pos:
                 self.collision_left = True
 
-
+        # adjust position when at border and rotates
         if at_right_b:
             for x, y in coord:
                 fixed_coord.append((x - block_size, y))
@@ -241,10 +215,10 @@ def clear_row(y):
         if y.count(i) >= col_num:
             clear_y.append(i)
     lines_score = len(clear_y)
-    if lines_score == 10:
+    if lines_score == col_num:
         score += lines_score
-    elif lines_score >= 20:
-        score += int(lines_score * (lines_score / 10))
+    elif lines_score >= col_num*2:
+        score += int(lines_score * (lines_score / col_num))
     if len(clear_y) > 0:
         for xycolor in taken_grid:
             if xycolor[0][1] in clear_y:
@@ -267,7 +241,6 @@ def scoreboard():
     score_text.render_to(win, score_pos, f'Score: {score}', (255, 255, 255))
 
 
-tetris_grid = Grid(top_left_x, top_left_y)
 taken_grid = []
 taken_pos = []
 taken_y = []
@@ -337,7 +310,7 @@ def gameOver():
                 loop_menu()
         grid_painter(taken_grid)
         scoreboard()
-        tetris_grid.draw(win)
+        grid(win)
 
         win.blit(gameoverbg, (0, 0))
         go_font.render_to(win, (145, 150), "Game over", (255, 0, 0))
@@ -353,19 +326,17 @@ def redraw_game_window():
     taken()
     grid_painter(taken_grid)
     scoreboard()
-    tetris_grid.draw(win)
+    grid(win)
     pygame.display.update()
 
 
 def loop_menu():
-    # ic = inactive_color
     menu = True
     while menu:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+                quit_click()
         
         win.fill((0, 0, 0))
 
@@ -377,7 +348,7 @@ def loop_menu():
 
 
 random_shape = figures[randint(0, len(figures) - 1)]
-current_figure = Fig(random_shape, start_x, start_y)
+current_figure = Fig()
 
 
 def loop_game():
@@ -398,13 +369,12 @@ def loop_game():
             taken()
             clear_row(taken_y)
             random_shape = figures[randint(0, len(figures) - 1)]
-            new_figure = Fig(random_shape, start_x, start_y)
+            new_figure = Fig()
             current_figure = new_figure
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+                quit_click()
 
         keys = pygame.key.get_pressed()
 
@@ -413,7 +383,7 @@ def loop_game():
 
         if keys[pygame.K_UP]:
             if ticker == 0:
-                current_figure.rotCw = True
+                current_figure.rotate_cw()
                 ticker = cooldown
 
         if keys[pygame.K_DOWN]:
