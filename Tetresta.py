@@ -4,7 +4,7 @@ from random import randint
 
 pygame.init()
 
-window_width = 500
+window_width = 550
 window_height = 700
 grid_width = 300
 grid_height = 600
@@ -19,8 +19,10 @@ cooldown = round(fps / 10)
 
 window = (window_width, window_height)
 win = pygame.display.set_mode(window)
+
 pygame.display.set_caption("Tetriada")
 bg = pygame.Surface(window)
+
 clock = pygame.time.Clock()
 
 figures = [(1, 1, 2,
@@ -48,7 +50,9 @@ figures_color = [(232, 229, 77),
 
 block_size = int(grid_width / col_num)
 start_x = int(top_left_x + grid_width/2 - block_size*2)
-start_y = int(top_left_y)
+# start_y = int(top_left_y)
+
+start_y = int(top_left_y - block_size*3)
 border_r = top_left_x + grid_width - block_size
 border_l = top_left_x
 border_b = top_left_y + grid_height
@@ -75,6 +79,9 @@ class Grid:
             self.grid_positions_y.append(self.start_y + r * block_size)
 
 
+
+
+
 class Fig:
     def __init__(self, shape, start_x, start_y):
         self.shape = shape
@@ -94,6 +101,11 @@ class Fig:
         self.isFallen = False
         self.draw_shape(self.shape, self.x, self.y)
         self.stored_coord = []
+
+    def fig_appear(self):
+        if self.shape == figures[2]:
+            pass
+
 
     def draw_shape(self, shape, sx, sy):
         row = 0
@@ -152,7 +164,10 @@ class Fig:
         self.stored_coord = self.coord
         self.color = figures_color[figures.index(self.shape)]
         for x, y in self.coord:
-            pygame.draw.rect(win, self.color, (x, y, block_size, block_size))
+            if y < top_left_y:
+                pygame.draw.rect(win, (0, 0, 0), (x, y, block_size, block_size))
+            else:
+                pygame.draw.rect(win, self.color, (x, y, block_size, block_size))
 
     def valid_space(self, coord):
         global taken_pos
@@ -160,19 +175,24 @@ class Fig:
         at_right_b = False
         at_left_b = False
         for x, y in coord:
+            # Border check
             if x > border_r:
                 at_right_b = True
             if x < border_l:
                 at_left_b = True
             if y + block_size >= border_b:
                 self.isFallen = True
-            if (x, y) not in taken_grid:
-                if (x, y + block_size) in taken_pos:
-                    self.isFallen = True
-                if (x + block_size, y) in taken_pos:
-                    self.collision_right = True
-                if (x - block_size, y) in taken_pos:
-                    self.collision_left = True
+            # Collision check
+            if (x, y + block_size) in taken_pos:
+                self.isFallen = True
+                # Game over check
+                if y + block_size <= top_left_y:
+                    gameOver()
+            if (x + block_size, y) in taken_pos:
+                self.collision_right = True
+            if (x - block_size, y) in taken_pos:
+                self.collision_left = True
+
 
         if at_right_b:
             for x, y in coord:
@@ -208,7 +228,8 @@ class Fig:
 
 def grid_painter(xy_color):
     for xy, color in xy_color:
-        pygame.draw.rect(win, color, (xy[0], xy[1], block_size, block_size))
+        if xy[1] >= top_left_y:
+            pygame.draw.rect(win, color, (xy[0], xy[1], block_size, block_size))
 
 
 def clear_row(y):
@@ -241,7 +262,7 @@ score = 0
 
 
 def scoreboard():
-    score_text = pygame.freetype.SysFont('Verdana', 20)
+    score_text = pygame.freetype.SysFont('Verdana', 30)
     score_pos = (top_left_x + grid_width + 30, int(top_left_y + grid_height / 2))
     score_text.render_to(win, score_pos, f'Score: {score}', (255, 255, 255))
 
@@ -262,16 +283,6 @@ def taken():
         taken_y.append(xy[1])
 
 
-def redraw_game_window():
-    win.blit(bg, (0, 0))
-    current_figure.draw_figure()
-    taken()
-    grid_painter(taken_grid)
-    scoreboard()
-    tetris_grid.draw(win)
-    pygame.display.update()
-
-
 def text_object(text, font, color):
     textSurface = font.render(text, True, color)
     return textSurface, textSurface.get_rect()
@@ -284,7 +295,7 @@ def quit_click():
 
 def button(text, y, action=None):
     # ic = inactive color; ac = active color
-    ic = (80, 166, 80)
+    ic = (12, 150, 0)
     ac = (42, 212, 42)
     largeText = pygame.font.SysFont('Verdana', 40)
     click = pygame.mouse.get_pressed()
@@ -306,6 +317,46 @@ def button(text, y, action=None):
     win.blit(TextSurf, TextRect)
 
 
+def gameOver():
+    show = True
+    gameoverbg = pygame.Surface(window)
+    gameoverbg.convert_alpha(bg)
+    gameoverbg.set_alpha(150)
+    gameoverbg.fill((0, 0, 0))
+    go_font = pygame.freetype.SysFont("Verdana", 50)
+    pe_font = pygame.freetype.SysFont("Verdana", 30)
+
+    while show:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_ESCAPE]:
+                loop_menu()
+        grid_painter(taken_grid)
+        scoreboard()
+        tetris_grid.draw(win)
+
+        win.blit(gameoverbg, (0, 0))
+        go_font.render_to(win, (145, 150), "Game over", (255, 0, 0))
+        pe_font.render_to(win, (205, 200), "Press ESC", (255, 0, 0))
+
+        pygame.display.update()
+
+
+def redraw_game_window():
+    win.blit(bg, (0, 0))
+
+    current_figure.draw_figure()
+    taken()
+    grid_painter(taken_grid)
+    scoreboard()
+    tetris_grid.draw(win)
+    pygame.display.update()
+
+
 def loop_menu():
     # ic = inactive_color
     menu = True
@@ -323,7 +374,6 @@ def loop_menu():
         button("Quit", 300, quit_click)
 
         pygame.display.update()
-        clock.tick(10)
 
 
 random_shape = figures[randint(0, len(figures) - 1)]
