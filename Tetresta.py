@@ -1,6 +1,7 @@
 import pygame
 import pygame.freetype
 from random import randint
+from pygame import mixer
 
 pygame.init()
 
@@ -14,7 +15,7 @@ top_left_x = 50
 top_left_y = 50
 grid_color = (50, 50, 50)
 
-fps = 30
+fps = 60
 cooldown = round(fps / 10)
 
 window = (window_width, window_height)
@@ -22,6 +23,11 @@ win = pygame.display.set_mode(window)
 pygame.display.set_caption("Tetriada")
 bg = pygame.Surface(window)
 clock = pygame.time.Clock()
+background_image = pygame.image.load('res/background_image.png')
+theme_song = 'res/tetris_theme.mp3'
+sad_trombone = 'res/trombone.mp3'
+mixer.music.load(theme_song)
+mixer.music.set_volume(0.2)
 
 figures = [(1, 1, 2,
             3, 1),
@@ -36,8 +42,12 @@ figures = [(1, 1, 2,
             0, 3, 1),
            (0, 1, 1, 2,
             1, 3, 0)]
+# figures = [(1, 3, 1, 2,
+#             1, 0, 0),
+#             (0, 1, 1, 2,
+#             1, 3, 0)]
 
-
+# figures_color = [(212, 34, 164), (199, 36, 28)]
 figures_color = [(232, 229, 77),
                 (212, 34, 164),
                 (33, 88, 191),
@@ -63,11 +73,13 @@ def grid(surface):
     for r in range(row_num + 1):
         pygame.draw.line(surface, grid_color, (x, y + r * block_size), (x + grid_width, y + r * block_size))
         grid_positions_y.append(y + r * block_size)
+    pygame.draw.rect(surface, (0, 200, 0), (x, y, grid_width, grid_height), 1)
 
 
 class Fig:
     def __init__(self):
         self.shape = random_shape
+        # self.shape = (1, 1, 3, 1)
         self.x = int(top_left_x + int(col_num/3) * block_size)
         self.y = int(top_left_y - block_size*3)
         self.timecount = 0
@@ -137,6 +149,7 @@ class Fig:
         self.valid_space(self.converter(self.rel_coord))
 
         self.color = figures_color[figures.index(self.shape)]
+        # self.color = [180, 180, 180]
         for x, y in self.coord:
             if y < top_left_y:
                 pygame.draw.rect(win, (0, 0, 0), (x, y, block_size, block_size))
@@ -219,7 +232,10 @@ def clear_row(y):
         score += lines_score
     elif lines_score >= col_num*2:
         score += int(lines_score * (lines_score / col_num))
+
+
     if len(clear_y) > 0:
+        clear_y = list(dict.fromkeys(clear_y))
         for xycolor in taken_grid:
             if xycolor[0][1] in clear_y:
                 pass
@@ -227,7 +243,10 @@ def clear_row(y):
                 if xycolor[0][1] > max(clear_y):
                     taken_sub.append(xycolor)
                 else:
-                    xycolor = ((xycolor[0][0], xycolor[0][1] + block_size * int((len(clear_y)/col_num))), xycolor[1])
+
+                    for y in clear_y:
+                        if xycolor[0][1] < y:
+                            xycolor = ((xycolor[0][0], xycolor[0][1] + block_size), xycolor[1])
                     taken_sub.append(xycolor)
         taken_grid = taken_sub
 
@@ -268,8 +287,10 @@ def quit_click():
 
 def button(text, y, action=None):
     # ic = inactive color; ac = active color
-    ic = (12, 150, 0)
-    ac = (42, 212, 42)
+    # ic = (12, 150, 0)
+    # ac = (42, 212, 42)
+    ic = (220, 220, 220)
+    ac = (255, 255, 255)
     largeText = pygame.font.SysFont('Verdana', 40)
     click = pygame.mouse.get_pressed()
 
@@ -289,17 +310,28 @@ def button(text, y, action=None):
 
     win.blit(TextSurf, TextRect)
 
+def text_center(text):
+    center = (window_width - text.get_rect().width) / 2
+    return int(center)
 
 def gameOver():
-    show = True
     gameoverbg = pygame.Surface(window)
     gameoverbg.convert_alpha(bg)
-    gameoverbg.set_alpha(150)
+    gameoverbg.set_alpha(190)
     gameoverbg.fill((0, 0, 0))
-    go_font = pygame.freetype.SysFont("Verdana", 50)
-    pe_font = pygame.freetype.SysFont("Verdana", 30)
+    # go_font = pygame.freetype.SysFont("Verdana", 50)
+    # pe_font = pygame.freetype.SysFont("Verdana", 30)
+    # score_font = pygame.freetype.SysFont('Verdana', 30)
+    go_font = pygame.font.SysFont("Verdana", 60)
+    pe_font = pygame.font.SysFont("Verdana", 20)
+    score_font = pygame.font.SysFont('Verdana', 60)
 
-    while show:
+    mixer.music.load(sad_trombone)
+    mixer.music.play()
+
+    # mixer.music.stop()
+
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -313,15 +345,25 @@ def gameOver():
         grid(win)
 
         win.blit(gameoverbg, (0, 0))
-        go_font.render_to(win, (145, 150), "Game over", (255, 0, 0))
-        pe_font.render_to(win, (205, 200), "Press ESC", (255, 0, 0))
+        game_over = go_font.render("Game over", 1, pygame.Color('red'))
+        go_x = text_center(game_over)
+        win.blit(game_over, (go_x, 200))
+        press_esc = pe_font.render('Press ESC to exit', 1, pygame.Color('firebrick'))
+        pe_x = text_center(press_esc)
+        win.blit(press_esc, (pe_x, 380))
+        game_score = score_font.render(f'Your score: {score}', 1, pygame.Color('white'))
+        gs_x = text_center(game_score)
+        win.blit(game_score, (gs_x, 280))
+        # go_font.render_to(win, (145, ), "Game over", (210, 0, 0))
+        # pe_font.render_to(win, (205, 230), "Press ESC", (200, 0, 0))
+        # score_font.render_to(win, ())
 
         pygame.display.update()
 
 
 def redraw_game_window():
     win.blit(bg, (0, 0))
-
+    gameOver()
     current_figure.draw_figure()
     taken()
     grid_painter(taken_grid)
@@ -331,23 +373,29 @@ def redraw_game_window():
 
 
 def loop_menu():
+    mixer.music.load(theme_song)
+    mixer.music.play(-1)
     menu = True
     while menu:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_click()
-        
+        background_image.convert_alpha(bg)
+        background_image.set_alpha(50)
         win.fill((0, 0, 0))
+        win.blit(background_image, (0,0))
 
-        button("Start game", 100, loop_game)
-        button("Leaderboards", 200)
-        button("Quit", 300, quit_click)
+        button("Start game", 200, loop_game)
+        button("Leaderboards", 300)
+        button("Settings", 400)
+        button("Quit", 500, quit_click)
 
         pygame.display.update()
 
 
 random_shape = figures[randint(0, len(figures) - 1)]
+
 current_figure = Fig()
 
 
